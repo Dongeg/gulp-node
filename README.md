@@ -91,3 +91,115 @@ gulp.task('lessauto', function () {
     gulp.watch('less/**.less', ['less']);
 })
 ```
+有时候项目过大只需要编译有改动的文件
+
+可以做如下配置
+
+注意必须先执行正常的编译然后再执行按需编译，否则最后只生成有有改动的文件
+
+gulpfile.js
+
+```
+//引入依赖
+var gulp = require('gulp')
+var gutil = require('gulp-util')
+
+var uglify = require('gulp-uglify')
+var watchPath = require('gulp-watch-path')
+
+//创建任务
+gulp.task('watchjs', function () {
+    gulp.watch('src/js/**/*.js', function (event) {
+    	//监听路径
+        var paths = watchPath(event, 'src/', 'dist/')
+        /*
+        paths
+            { srcPath: 'src/js/log.js',
+              srcDir: 'src/js/',
+              distPath: 'dist/js/log.js',
+              distDir: 'dist/js/',
+              srcFilename: 'log.js',
+              distFilename: 'log.js' }
+        */
+        //控制台输出色彩（非必需）
+        gutil.log(gutil.colors.green(event.type) + ' ' + paths.srcPath)
+        gutil.log('Dist ' + paths.distPath)
+
+        gulp.src(paths.srcPath)
+            .pipe(uglify())
+            .pipe(gulp.dest(paths.distDir))
+    })
+})
+
+gulp.task('default', ['watchjs'])
+```
+
+//控制台报错输出
+
+```js
+var gulp = require('gulp')
+var gutil = require('gulp-util')
+var uglify = require('gulp-uglify')
+var watchPath = require('gulp-watch-path')
+var combiner = require('stream-combiner2')
+
+var handleError = function (err) {
+    var colors = gutil.colors;
+    console.log('\n')
+    gutil.log(colors.red('Error!'))
+    gutil.log('fileName: ' + colors.red(err.fileName))
+    gutil.log('lineNumber: ' + colors.red(err.lineNumber))
+    gutil.log('message: ' + err.message)
+    gutil.log('plugin: ' + colors.yellow(err.plugin))
+}
+gulp.task('watchjs', function () {
+    gulp.watch('src/js/**/*.js', function (event) {
+        var paths = watchPath(event, 'src/', 'dist/')
+        /*
+        paths
+            { srcPath: 'src/js/log.js',
+              srcDir: 'src/js/',
+              distPath: 'dist/js/log.js',
+              distDir: 'dist/js/',
+              srcFilename: 'log.js',
+              distFilename: 'log.js' }
+        */
+        gutil.log(gutil.colors.green(event.type) + ' ' + paths.srcPath)
+        gutil.log('Dist ' + paths.distPath)
+
+        var combined = combiner.obj([
+            gulp.src(paths.srcPath),
+            uglify(),
+            gulp.dest(paths.distDir)
+        ])
+
+        combined.on('error', handleError)
+    })
+})
+
+gulp.task('default', ['watchjs'])
+```
+
+
+CSS autoprefixer
+
+```js
+gulp.task('watchcss', function () {
+    gulp.watch('src/css/**/*.css', function (event) {
+        var paths = watchPath(event, 'src/', 'dist/')
+
+		gutil.log(gutil.colors.green(event.type) + ' ' + paths.srcPath)
+        gutil.log('Dist ' + paths.distPath)
+
+        gulp.src(paths.srcPath)
+            .pipe(sourcemaps.init())
+            .pipe(autoprefixer({
+              browsers: 'last 2 versions'
+            }))
+            .pipe(minifycss())
+            .pipe(sourcemaps.write('./'))
+            .pipe(gulp.dest(paths.distDir))
+    })
+})
+
+```
