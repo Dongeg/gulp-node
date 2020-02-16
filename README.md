@@ -72,7 +72,7 @@ gulp.task('images', function () {
     // 3. 另存图片
         .pipe(gulp.dest('dist/images'))
 });
-gulp.ask('imgauto',function(){
+gulp.task('imgauto',function(){
   gulp.watch('images/*.*)', ['images'])
 })
 
